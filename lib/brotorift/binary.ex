@@ -57,7 +57,7 @@ defmodule Brotorift.Binary do
     <<value::binary-size(len), data::binary>> = data
     {data, value}
   end
-  
+
   def read_datetime(data) do
     {data, timestamp} = read_int(data)
     {:ok, datetime} = DateTime.from_unix(timestamp)
@@ -169,9 +169,9 @@ defmodule Brotorift.Binary do
   end
 
   def write_string(data, value) do
-    <<data::binary, String.length(value)::32-little, value::binary>>
+    <<data::binary, byte_size(value)::32-little, value::binary>>
   end
-  
+
   def write_datetime(data, value) do
     timestamp = DateTime.to_unix(value)
     write_int(data, timestamp)
