@@ -12,16 +12,28 @@ defmodule Brotorift.RanchProtocol do
     #IO.puts("Starting protocol")
 
     :ok = :ranch.accept_ack(ref)
-    :ok = transport.setopts(socket, [{:active, true}])
+    :ok = transport.setopts(socket, [{:active, :once}])
     {:ok, connection} = Brotorift.ConnectionSupervisor.start_connection(mod, handler, socket, transport)
     :gen_server.enter_loop(__MODULE__, [], {socket, transport, mod, connection})
+
+    loop(socket, transport, mod, connection)
   end
 
-  def handle_info({:tcp, socket, data}, {socket, transport, mod, connection}) do
-    transport.send(socket, data)
-    mod.handle_data(connection, data)
-    {:noreply, {socket, transport, mod, connection}}
+  defp loop(socket, transport, mod, connection) do
+    case transport.recv(socket, 0, 5000) do
+      {:ok, data} ->
+        transport.send(socket, data)
+        mod.handle_data(connection, data)
+      _ ->
+        # :ok = transport.close(socket)
+    end
   end
+
+  # def handle_info({:tcp, socket, data}, {socket, transport, mod, connection}) do
+  #   transport.send(socket, data)
+  #   mod.handle_data(connection, data)
+  #   {:noreply, {socket, transport, mod, connection}}
+  # end
 
   def handle_info({:tcp_closed, socket}, {socket, transport, mod, connection}) do
     mod.stop(connection)
