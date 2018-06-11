@@ -1,10 +1,8 @@
 defmodule Brotorift.RanchProtocol do
-  use GenServer
-
   @behaviour :ranch_protocol
 
   def start_link(ref, socket, transport, {mod, handler}) do
-    pid = :proc_lib.spawn_link(__MODULE__, :init, [{ref, socket, transport, mod, handler}])
+    pid = spawn_link(__MODULE__, :init, [{ref, socket, transport, mod, handler}])
     {:ok, pid}
   end
 
@@ -12,33 +10,33 @@ defmodule Brotorift.RanchProtocol do
     #IO.puts("Starting protocol")
 
     :ok = :ranch.accept_ack(ref)
-    :ok = transport.setopts(socket, [{:active, :once}])
+    :ok = transport.setopts(socket, [active: :false])
     {:ok, connection} = Brotorift.ConnectionSupervisor.start_connection(mod, handler, socket, transport)
-    :gen_server.enter_loop(__MODULE__, [], {socket, transport, mod, connection})
 
     loop(socket, transport, mod, connection)
   end
 
   defp loop(socket, transport, mod, connection) do
-    {:ok, size} = transport.recv(socket, 4, 5000)
-    case transport.recv(socket, size, 5000) do
-      {:ok, data} ->
-        transport.send(socket, data)
-        mod.handle_data(connection, data)
+    case transport.recv(socket, 4, :infinity) do
+      {:ok, size_data} ->
+        <<size::little-32>> = size_data
+        case transport.recv(socket, size, :infinity) do
+          {:ok, data} ->
+            mod.handle_data(connection, data)
+            loop(socket, transport, mod, connection)
+          {:error, :closed} ->
+            mod.stop(connection)
+            transport.close(socket)
+          _ ->
+            mod.stop(connection)
+            transport.close(socket)
+        end
+      {:error, :closed} ->
+        mod.stop(connection)
+        transport.close(socket)
       _ ->
-        :ok = transport.close(socket)
+        mod.stop(connection)
+        transport.close(socket)
     end
-  end
-
-  # def handle_info({:tcp, socket, data}, {socket, transport, mod, connection}) do
-  #   transport.send(socket, data)
-  #   mod.handle_data(connection, data)
-  #   {:noreply, {socket, transport, mod, connection}}
-  # end
-
-  def handle_info({:tcp_closed, socket}, {socket, transport, mod, connection}) do
-    mod.stop(connection)
-    transport.close(socket)
-    {:stop, :normal, {socket, transport, mod, connection}}
   end
 end
