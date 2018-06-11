@@ -20,12 +20,13 @@ defmodule Brotorift.RanchProtocol do
   end
 
   defp loop(socket, transport, mod, connection) do
-    case transport.recv(socket, 0, 5000) do
+    {:ok, size} = transport.recv(socket, 4, 5000)
+    case transport.recv(socket, size, 5000) do
       {:ok, data} ->
         transport.send(socket, data)
         mod.handle_data(connection, data)
       _ ->
-        # :ok = transport.close(socket)
+        :ok = transport.close(socket)
     end
   end
 
