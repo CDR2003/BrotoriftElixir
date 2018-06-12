@@ -13,8 +13,9 @@ defmodule Brotorift.Server do
     port = Keyword.fetch!(args, :port)
     mod = Keyword.fetch!(args, :mod)
     handler = Keyword.fetch!(args, :handler)
+    data_head = Keyword.fetch!(args, :data_head)
     handler.start()
-    {:ok, pid} = :ranch.start_listener(__MODULE__, 500, :ranch_tcp, [{:port, port}], Brotorift.RanchProtocol, {mod, handler})
+    {:ok, pid} = :ranch.start_listener(__MODULE__, 500, :ranch_tcp, [{:port, port}], Brotorift.RanchProtocol, {mod, handler, data_head})
     :ranch.set_max_connections(__MODULE__, :infinity)
     {:ok, pid}
   end
