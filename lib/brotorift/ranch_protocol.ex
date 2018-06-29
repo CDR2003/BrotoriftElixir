@@ -62,6 +62,10 @@ defmodule Brotorift.RanchProtocol do
     end
   end
 
+  defp read_packet(_packet_type, socket, transport, mod, _data_head, connection, _version_checked) do
+    close(socket, transport, mod, connection)
+  end
+
   def close(socket, transport, mod, connection) do
     mod.stop(connection)
     transport.close(socket)
