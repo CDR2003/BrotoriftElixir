@@ -14,7 +14,7 @@ defmodule Brotorift.RanchProtocol do
 
   def init({ref, socket, transport, mod, handler, data_head}) do
     :ok = :ranch.accept_ack(ref)
-    :ok = transport.setopts(socket, active: false)
+    :ok = transport.setopts(socket, active: false, keepalive: true, send_timeout: 10000)
 
     {:ok, connection} =
       Brotorift.ConnectionSupervisor.start_connection(mod, handler, socket, transport)
