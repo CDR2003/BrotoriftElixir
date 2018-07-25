@@ -4,7 +4,7 @@ defmodule Brotorift.MixProject do
   def project do
     [
       app: :brotorift,
-      version: "0.3.3",
+      version: "0.4.1",
       elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
       package: package(),
