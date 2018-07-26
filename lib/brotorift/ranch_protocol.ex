@@ -25,7 +25,7 @@ defmodule Brotorift.RanchProtocol do
   end
 
   defp loop(socket, transport, mod, data_head, connection, hb_timeout, version_checked) do
-    with {:ok, <<^data_head::64-little-signed>>} <- transport.recv(socket, 8, hb_timeout),
+    with {:ok, <<^data_head::32-little-signed>>} <- transport.recv(socket, 8, hb_timeout),
          {:ok, <<packet_type::8>>} <- transport.recv(socket, 1, hb_timeout) do
       read_packet(packet_type, socket, transport, mod, data_head, connection, hb_timeout, version_checked)
     else
