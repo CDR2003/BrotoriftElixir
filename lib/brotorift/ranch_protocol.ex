@@ -6,7 +6,7 @@ defmodule Brotorift.RanchProtocol do
   @cs_heartbeat 3
 
   # @sc_packet_data 128
-  @sc_packet_wrong_version 129
+  @sc_packet_version_check_result 129
   @sc_heartbeat 130
 
   def start_link(ref, socket, transport, {mod, handler, data_head, hb_timeout}) do
@@ -37,9 +37,9 @@ defmodule Brotorift.RanchProtocol do
   defp read_packet(@cs_packet_client_version, socket, transport, mod, data_head, connection, hb_timeout, _version_checked) do
     with {:ok, <<client_version::32-little-signed>>} <- transport.recv(socket, 4, hb_timeout) do
       server_version = mod.version()
+      reply = <<@sc_packet_version_check_result::8, client_version::32-little-signed, server_version::32-little-signed>>
+      transport.send(socket, reply)
       if client_version != server_version do
-        reply = <<@sc_packet_wrong_version::8, client_version::32-little-signed, server_version::32-little-signed>>
-        transport.send(socket, reply)
         close(socket, transport, mod, connection)
       else
         loop(socket, transport, mod, data_head, connection, hb_timeout, true)
